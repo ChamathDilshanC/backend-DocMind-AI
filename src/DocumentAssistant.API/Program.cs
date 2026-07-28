@@ -8,6 +8,7 @@ using DocumentAssistant.Application.Common.Interfaces;
 using DocumentAssistant.Infrastructure;
 using DocumentAssistant.Infrastructure.Auth;
 using DocumentAssistant.Persistence;
+using DocumentAssistant.SemanticKernel;
 using DocumentAssistant.VectorStore;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -47,6 +48,7 @@ builder.Services.AddApplication();
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddVectorStore(builder.Configuration);
+builder.Services.AddSemanticKernelServices(builder.Configuration);
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
