@@ -1,6 +1,7 @@
 using DocumentAssistant.Application.Common.Interfaces;
 using DocumentAssistant.Infrastructure.Auth;
 using DocumentAssistant.Infrastructure.BackgroundJobs;
+using DocumentAssistant.Infrastructure.Caching;
 using DocumentAssistant.Infrastructure.DocumentProcessing;
 using DocumentAssistant.Infrastructure.Storage;
 using Microsoft.Extensions.Configuration;
@@ -28,6 +29,9 @@ public static class DependencyInjection
 
         services.AddScoped<IDocumentProcessingJob, DocumentProcessingJob>();
         services.AddScoped<IBackgroundJobEnqueuer, HangfireBackgroundJobEnqueuer>();
+
+        services.AddMemoryCache();
+        services.AddSingleton<ICacheService, InMemoryCacheService>();
 
         return services;
     }
