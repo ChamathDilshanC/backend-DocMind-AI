@@ -1,5 +1,6 @@
 using DocumentAssistant.Application.Common.Interfaces;
 using DocumentAssistant.Infrastructure.Auth;
+using DocumentAssistant.Infrastructure.DocumentProcessing;
 using DocumentAssistant.Infrastructure.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,11 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
         services.AddSingleton<IStorageService, LocalFileStorageService>();
+
+        services.AddSingleton<IDocumentTextExtractor, PdfTextExtractor>();
+        services.AddSingleton<IDocumentTextExtractor, DocxTextExtractor>();
+        services.AddSingleton<IDocumentTextExtractorFactory, DocumentTextExtractorFactory>();
+        services.AddSingleton<ITextChunker, SlidingWindowTextChunker>();
 
         return services;
     }
