@@ -6,6 +6,7 @@ using DocumentAssistant.Infrastructure.DocumentProcessing;
 using DocumentAssistant.Infrastructure.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace DocumentAssistant.Infrastructure;
 
@@ -16,6 +17,7 @@ public static class DependencyInjection
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<GoogleAuthOptions>(configuration.GetSection(GoogleAuthOptions.SectionName));
         services.Configure<StorageOptions>(configuration.GetSection(StorageOptions.SectionName));
+        services.Configure<RedisOptions>(configuration.GetSection(RedisOptions.SectionName));
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
@@ -30,8 +32,9 @@ public static class DependencyInjection
         services.AddScoped<IDocumentProcessingJob, DocumentProcessingJob>();
         services.AddScoped<IBackgroundJobEnqueuer, HangfireBackgroundJobEnqueuer>();
 
-        services.AddMemoryCache();
-        services.AddSingleton<ICacheService, InMemoryCacheService>();
+        var redisConnectionString = configuration.GetSection(RedisOptions.SectionName)["ConnectionString"] ?? "localhost:6379";
+        services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnectionString));
+        services.AddSingleton<ICacheService, RedisCacheService>();
 
         return services;
     }
