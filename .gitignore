@@ -1,0 +1,35 @@
+# Build artifacts
+bin/
+obj/
+out/
+*.dll
+*.pdb
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Secrets / environment
+appsettings.Development.json
+appsettings.*.local.json
+.env
+.env.*
+!.env.example
+
+# App data
+storage/
+logs/
+*.log
+
+# Test results
+TestResults/
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+# OS
+.DS_Store
+Thumbs.db

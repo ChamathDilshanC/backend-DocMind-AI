@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
+    <PackageReference Include="AspNetCore.HealthChecks.Redis" Version="9.0.0" />
+    <PackageReference Include="Hangfire.AspNetCore" Version="1.8.24" />
+    <PackageReference Include="Hangfire.PostgreSql" Version="1.21.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DocumentAssistant.Application\DocumentAssistant.Application.csproj" />
+    <ProjectReference Include="..\DocumentAssistant.Infrastructure\DocumentAssistant.Infrastructure.csproj" />
+    <ProjectReference Include="..\DocumentAssistant.Persistence\DocumentAssistant.Persistence.csproj" />
+    <ProjectReference Include="..\DocumentAssistant.SemanticKernel\DocumentAssistant.SemanticKernel.csproj" />
+    <ProjectReference Include="..\DocumentAssistant.VectorStore\DocumentAssistant.VectorStore.csproj" />
+    <ProjectReference Include="..\DocumentAssistant.Shared\DocumentAssistant.Shared.csproj" />
+  </ItemGroup>
+
+</Project>
