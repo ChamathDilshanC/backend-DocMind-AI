@@ -7,6 +7,7 @@ using DocumentAssistant.Application.Common.Interfaces;
 using DocumentAssistant.Infrastructure;
 using DocumentAssistant.Infrastructure.Auth;
 using DocumentAssistant.Persistence;
+using DocumentAssistant.VectorStore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
@@ -42,6 +43,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddApplication();
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddVectorStore(builder.Configuration);
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
