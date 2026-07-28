@@ -5,8 +5,10 @@ namespace DocumentAssistant.SemanticKernel;
 
 public class OpenAiAnswerGenerationService(KernelFactory kernelFactory) : IAnswerGenerationService
 {
-    private readonly IChatCompletionService _chatCompletionService =
-        kernelFactory.CreateChatKernel().GetRequiredService<IChatCompletionService>();
+    // Lazy for the same reason as OpenAiEmbeddingService: defer the OpenAI connector's
+    // key validation until first use so DI activation never fails outside a try/catch.
+    private readonly Lazy<IChatCompletionService> _chatCompletionService =
+        new(() => kernelFactory.CreateChatKernel().GetRequiredService<IChatCompletionService>());
 
     public async IAsyncEnumerable<string> StreamCompletionAsync(
         string systemPrompt, IReadOnlyList<ChatTurn> history, string question,
@@ -28,7 +30,7 @@ public class OpenAiAnswerGenerationService(KernelFactory kernelFactory) : IAnswe
 
         chatHistory.AddUserMessage(question);
 
-        await foreach (var chunk in _chatCompletionService.GetStreamingChatMessageContentsAsync(chatHistory, cancellationToken: cancellationToken))
+        await foreach (var chunk in _chatCompletionService.Value.GetStreamingChatMessageContentsAsync(chatHistory, cancellationToken: cancellationToken))
         {
             if (!string.IsNullOrEmpty(chunk.Content))
             {
