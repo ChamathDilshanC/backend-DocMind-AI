@@ -1,5 +1,6 @@
 using DocumentAssistant.Application.Common.Interfaces;
 using DocumentAssistant.Infrastructure.Auth;
+using DocumentAssistant.Infrastructure.BackgroundJobs;
 using DocumentAssistant.Infrastructure.DocumentProcessing;
 using DocumentAssistant.Infrastructure.Storage;
 using Microsoft.Extensions.Configuration;
@@ -24,6 +25,9 @@ public static class DependencyInjection
         services.AddSingleton<IDocumentTextExtractor, DocxTextExtractor>();
         services.AddSingleton<IDocumentTextExtractorFactory, DocumentTextExtractorFactory>();
         services.AddSingleton<ITextChunker, SlidingWindowTextChunker>();
+
+        services.AddScoped<IDocumentProcessingJob, DocumentProcessingJob>();
+        services.AddScoped<IBackgroundJobEnqueuer, HangfireBackgroundJobEnqueuer>();
 
         return services;
     }

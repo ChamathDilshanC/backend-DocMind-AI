@@ -1,5 +1,6 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using DocumentAssistant.API.Hubs;
 using DocumentAssistant.API.Middleware;
 using DocumentAssistant.API.Services;
 using DocumentAssistant.Application;
@@ -8,6 +9,8 @@ using DocumentAssistant.Infrastructure;
 using DocumentAssistant.Infrastructure.Auth;
 using DocumentAssistant.Persistence;
 using DocumentAssistant.VectorStore;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
@@ -47,6 +50,17 @@ builder.Services.AddVectorStore(builder.Configuration);
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+builder.Services.AddSignalR();
+builder.Services.AddScoped<INotificationService, SignalRNotificationService>();
+
+builder.Services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")),
+        new PostgreSqlStorageOptions { SchemaName = "hangfire" }));
+builder.Services.AddHangfireServer();
 
 var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
 var jwtSigningKey = jwtSection["SigningKey"] ?? throw new InvalidOperationException("Jwt:SigningKey is not configured.");
@@ -136,5 +150,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<AppHub>("/hubs/app");
+app.MapHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = [new HangfireDashboardAuthorizationFilter()]
+});
 
 app.Run();
