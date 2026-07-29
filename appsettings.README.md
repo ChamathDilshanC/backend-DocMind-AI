@@ -41,9 +41,9 @@ GitHub Models' free tier is rate-limited (fine for solo dev/testing, not for rea
 
 ## Production
 
-Use environment variables (ASP.NET Core config automatically maps `Jwt__SigningKey`-style env vars to `Jwt:SigningKey`) or a proper secret manager (Azure Key Vault, AWS Secrets Manager, etc.) — never a committed file.
+Use environment variables (ASP.NET Core config automatically maps `Jwt__SigningKey`-style env vars to `Jwt:SigningKey`) or your host's secret manager — never a committed file.
 
-For a full Azure App Service deployment walkthrough (resource provisioning, exact App Settings, CI/CD via GitHub Actions), see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+For the full deployment walkthrough (Render + Neon + Upstash + Qdrant Cloud, exact environment variables, the Docker build), see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ## Never commit
 

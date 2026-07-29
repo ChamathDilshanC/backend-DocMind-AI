@@ -1,0 +1,15 @@
+**/bin/
+**/obj/
+**/.vs/
+**/logs/
+**/storage/
+**/TestResults/
+**/*.user
+.git/
+.github/
+.editorconfig
+appsettings.Development.json
+appsettings.*.local.json
+.env
+.env.*
+*.md

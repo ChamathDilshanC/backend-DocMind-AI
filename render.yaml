@@ -1,0 +1,57 @@
+# Render Blueprint — see DEPLOYMENT.md for the full walkthrough.
+# Deploy via Render dashboard → New → Blueprint → point at this repo.
+# Fields marked `sync: false` are secrets Render will prompt you for
+# (and store encrypted) rather than reading from this committed file.
+services:
+  - type: web
+    name: docmind-ai-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: RunMigrationsOnStartup
+        value: "true"
+
+      - key: ConnectionStrings__DefaultConnection
+        sync: false # Neon connection string, Npgsql format — see DEPLOYMENT.md step 1
+
+      - key: Redis__ConnectionString
+        sync: false # Upstash connection string — see DEPLOYMENT.md step 2
+
+      - key: Qdrant__Host
+        sync: false # Qdrant Cloud cluster host, no https:// prefix
+      - key: Qdrant__GrpcPort
+        value: "6334"
+      - key: Qdrant__UseHttps
+        value: "true"
+      - key: Qdrant__ApiKey
+        sync: false
+
+      - key: OpenAI__Endpoint
+        sync: false # https://models.inference.ai.azure.com for GitHub Models, or blank for real OpenAI
+      - key: OpenAI__ApiKey
+        sync: false
+      - key: OpenAI__ChatModel
+        value: gpt-4o
+      - key: OpenAI__EmbeddingModel
+        value: text-embedding-3-small
+
+      - key: Jwt__Issuer
+        value: DocMindAI
+      - key: Jwt__Audience
+        value: DocMindAI
+      - key: Jwt__SigningKey
+        sync: false
+
+      - key: Authentication__Google__ClientId
+        sync: false
+
+      - key: Storage__RootPath
+        value: /app/storage
+
+      - key: Cors__AllowedOrigins__0
+        value: https://frontend-doc-mind-ai.vercel.app
