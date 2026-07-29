@@ -31,3 +31,35 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t docmind-api:ci .
+
+  release:
+    name: Publish "latest" release
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Move the "latest" tag to this commit
+        run: |
+          git tag -f latest
+          git push origin latest --force
+
+      - name: Remove previous "latest" release (if any)
+        run: gh release delete latest --yes || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create "latest" release
+        run: |
+          gh release create latest \
+            --title "Latest (build ${{ github.run_number }})" \
+            --target "${{ github.sha }}" \
+            --generate-notes \
+            --latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
