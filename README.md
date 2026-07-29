@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="src/DocumentAssistant.API/wwwroot/logo-full.png" alt="DocMind AI" width="360" />
+</p>
+
 # DocMind AI — Backend
 
 [![CI](https://github.com/ChamathDilshanC/backend-DocMind-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/ChamathDilshanC/backend-DocMind-AI/actions/workflows/ci.yml)
