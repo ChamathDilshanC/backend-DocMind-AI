@@ -33,6 +33,6 @@ public class UpdateUserProfileCommandHandler(IApplicationDbContext context, ICur
 
         return new UserProfileDto(
             user.Id, user.Name, user.Email, user.Role.ToString(),
-            user.PasswordHash is not null, user.GoogleId is not null, user.EmailVerified, user.CreatedAt);
+            user.PasswordHash is not null, user.GoogleId is not null, user.EmailVerified, user.CreatedAt, user.AvatarUrl);
     }
 }

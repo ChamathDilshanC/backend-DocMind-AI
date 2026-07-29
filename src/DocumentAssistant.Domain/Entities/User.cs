@@ -14,6 +14,9 @@ public class User : BaseEntity
     /// <summary>Google "sub" claim. Null for local-only accounts. A row may have both this and PasswordHash set.</summary>
     public string? GoogleId { get; set; }
 
+    /// <summary>Profile photo URL from the Google "picture" claim. Refreshed on every Google sign-in. Null for local-only accounts.</summary>
+    public string? AvatarUrl { get; set; }
+
     public UserRole Role { get; set; } = UserRole.User;
     public bool EmailVerified { get; set; }
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

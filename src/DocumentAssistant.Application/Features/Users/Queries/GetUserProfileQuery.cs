@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DocumentAssistant.Application.Features.Users.Queries;
 
-public record UserProfileDto(Guid Id, string Name, string Email, string Role, bool HasPassword, bool HasGoogleLinked, bool EmailVerified, DateTime CreatedAt);
+public record UserProfileDto(Guid Id, string Name, string Email, string Role, bool HasPassword, bool HasGoogleLinked, bool EmailVerified, DateTime CreatedAt, string? AvatarUrl);
 
 public record GetUserProfileQuery : IRequest<UserProfileDto>;
 
@@ -22,6 +22,6 @@ public class GetUserProfileQueryHandler(IApplicationDbContext context, ICurrentU
 
         return new UserProfileDto(
             user.Id, user.Name, user.Email, user.Role.ToString(),
-            user.PasswordHash is not null, user.GoogleId is not null, user.EmailVerified, user.CreatedAt);
+            user.PasswordHash is not null, user.GoogleId is not null, user.EmailVerified, user.CreatedAt, user.AvatarUrl);
     }
 }

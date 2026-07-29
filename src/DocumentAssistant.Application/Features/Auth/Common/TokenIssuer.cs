@@ -27,6 +27,6 @@ public static class TokenIssuer
             accessToken.Token,
             accessToken.ExpiresAt,
             rawRefreshToken,
-            new UserDto(user.Id, user.Name, user.Email, user.Role.ToString()));
+            new UserDto(user.Id, user.Name, user.Email, user.Role.ToString(), user.AvatarUrl));
     }
 }

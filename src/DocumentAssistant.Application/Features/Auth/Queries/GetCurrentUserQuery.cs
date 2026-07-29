@@ -19,6 +19,6 @@ public class GetCurrentUserQueryHandler(IApplicationDbContext context, ICurrentU
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken)
             ?? throw new NotFoundException(nameof(Domain.Entities.User), userId);
 
-        return new UserDto(user.Id, user.Name, user.Email, user.Role.ToString());
+        return new UserDto(user.Id, user.Name, user.Email, user.Role.ToString(), user.AvatarUrl);
     }
 }

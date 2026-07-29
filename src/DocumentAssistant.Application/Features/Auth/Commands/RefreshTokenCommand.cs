@@ -67,7 +67,7 @@ public class RefreshTokenCommandHandler(
             accessToken.Token,
             accessToken.ExpiresAt,
             newRawToken,
-            new UserDto(existing.User.Id, existing.User.Name, existing.User.Email, existing.User.Role.ToString()));
+            new UserDto(existing.User.Id, existing.User.Name, existing.User.Email, existing.User.Role.ToString(), existing.User.AvatarUrl));
     }
 
     private async Task RevokeAllActiveTokensAsync(Guid userId, string? ipAddress, CancellationToken cancellationToken)

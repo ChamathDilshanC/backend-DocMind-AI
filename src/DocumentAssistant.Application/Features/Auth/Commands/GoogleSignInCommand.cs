@@ -40,14 +40,22 @@ public class GoogleSignInCommandHandler(
                 Name = googleUser.Name,
                 Email = normalizedEmail,
                 GoogleId = googleUser.Subject,
-                EmailVerified = googleUser.EmailVerified
+                EmailVerified = googleUser.EmailVerified,
+                AvatarUrl = googleUser.Picture
             };
             context.Users.Add(user);
         }
-        else if (user.GoogleId is null)
+        else
         {
-            user.GoogleId = googleUser.Subject;
-            if (googleUser.EmailVerified) user.EmailVerified = true;
+            if (user.GoogleId is null)
+            {
+                user.GoogleId = googleUser.Subject;
+                if (googleUser.EmailVerified) user.EmailVerified = true;
+            }
+
+            // Google rotates these URLs, so refresh on every sign-in rather than
+            // letting a stale link rot into a broken image.
+            if (googleUser.Picture is not null) user.AvatarUrl = googleUser.Picture;
         }
 
         await context.SaveChangesAsync(cancellationToken);

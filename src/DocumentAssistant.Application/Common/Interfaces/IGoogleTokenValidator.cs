@@ -1,6 +1,6 @@
 namespace DocumentAssistant.Application.Common.Interfaces;
 
-public record GoogleUserInfo(string Subject, string Email, string Name, bool EmailVerified);
+public record GoogleUserInfo(string Subject, string Email, string Name, bool EmailVerified, string? Picture);
 
 public interface IGoogleTokenValidator
 {
