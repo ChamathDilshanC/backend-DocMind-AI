@@ -28,6 +28,8 @@ dotnet user-secrets set "Authentication:Google:ClientId" "<your-client-id>.apps.
 
 Use environment variables (ASP.NET Core config automatically maps `Jwt__SigningKey`-style env vars to `Jwt:SigningKey`) or a proper secret manager (Azure Key Vault, AWS Secrets Manager, etc.) — never a committed file.
 
+For a full Azure App Service deployment walkthrough (resource provisioning, exact App Settings, CI/CD via GitHub Actions), see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
 ## Never commit
 
 - `appsettings.Development.json` (gitignored)

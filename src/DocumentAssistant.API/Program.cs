@@ -155,7 +155,11 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Defaults to true so a single-instance deployment (e.g. one Azure App Service instance) applies
+// pending EF Core migrations automatically on boot. Set "RunMigrationsOnStartup": false (or the
+// RunMigrationsOnStartup app setting/env var) once you run multiple instances, to avoid concurrent
+// migration races -- apply migrations as a separate release step instead in that case.
+if (app.Configuration.GetValue("RunMigrationsOnStartup", true))
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

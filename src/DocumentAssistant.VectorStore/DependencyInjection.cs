@@ -14,7 +14,8 @@ public static class DependencyInjection
 
         var qdrantOptions = section.Get<QdrantOptions>() ?? new QdrantOptions();
 
-        services.AddSingleton(_ => new QdrantClient(qdrantOptions.Host, qdrantOptions.GrpcPort, qdrantOptions.UseHttps));
+        services.AddSingleton(_ => new QdrantClient(
+            qdrantOptions.Host, qdrantOptions.GrpcPort, qdrantOptions.UseHttps, qdrantOptions.ApiKey));
         services.AddSingleton<IVectorStoreService, QdrantVectorStoreService>();
         services.AddHostedService<QdrantCollectionInitializer>();
 
