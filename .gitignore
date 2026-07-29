@@ -18,9 +18,11 @@ appsettings.*.local.json
 .env.*
 !.env.example
 
-# App data
-storage/
-logs/
+# App data (runtime, under the API project's working directory only —
+# anchored so it never collides with source folders of the same name,
+# e.g. DocumentAssistant.Infrastructure/Storage/)
+src/DocumentAssistant.API/storage/
+src/DocumentAssistant.API/logs/
 *.log
 
 # Test results
