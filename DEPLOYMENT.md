@@ -137,7 +137,7 @@ az webapp config appsettings set --resource-group $RG --name docmind-ai-api --se
   Qdrant__ApiKey="<your-qdrant-cloud-api-key>" \
   Redis__ConnectionString="docmind-ai-redis.redis.cache.windows.net:6380,password=<redis-key>,ssl=True,abortConnect=False" \
   Storage__RootPath="/home/storage" \
-  Cors__AllowedOrigins__0="https://<your-frontend-domain>"
+  Cors__AllowedOrigins__0="https://frontend-doc-mind-ai.vercel.app"
 ```
 
 Notes:
