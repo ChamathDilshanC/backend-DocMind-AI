@@ -24,6 +24,21 @@ dotnet user-secrets set "Authentication:Google:ClientId" "<your-client-id>.apps.
 
 > The root `docker-compose.yml` maps Postgres to host port **5433** (not the default 5432) to avoid clashing with a locally-installed PostgreSQL service, if one happens to already be running on your machine.
 
+## Testing for free with GitHub Models (no OpenAI billing needed)
+
+For local development/testing only — not for production — you can point the OpenAI connector at [GitHub Models](https://github.com/marketplace/models) instead of paying OpenAI directly. GitHub Models exposes an OpenAI-compatible endpoint, authenticated with a GitHub **personal access token** (no scopes/permissions need to be checked when creating it).
+
+```
+dotnet user-secrets set "OpenAI:Endpoint" "https://models.inference.ai.azure.com"
+dotnet user-secrets set "OpenAI:ApiKey" "<your GitHub personal access token>"
+```
+
+`OpenAI:ChatModel` (`gpt-4o`) and `OpenAI:EmbeddingModel` (`text-embedding-3-small`) both work unchanged against GitHub Models — same model names, different endpoint.
+
+**Never paste a token directly into a chat, issue, PR, or any file that might get committed.** Always put it straight into `dotnet user-secrets` (or an environment variable) and nowhere else. If a token is ever pasted somewhere it shouldn't be, treat it as compromised immediately — revoke it at GitHub → Settings → Developer settings → Personal access tokens, and generate a new one.
+
+GitHub Models' free tier is rate-limited (fine for solo dev/testing, not for real traffic) — leave `OpenAI:Endpoint` unset to fall back to the real OpenAI API for anything production-like.
+
 ## Production
 
 Use environment variables (ASP.NET Core config automatically maps `Jwt__SigningKey`-style env vars to `Jwt:SigningKey`) or a proper secret manager (Azure Key Vault, AWS Secrets Manager, etc.) — never a committed file.
