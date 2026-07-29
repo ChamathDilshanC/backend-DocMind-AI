@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DocMind AI — API Status</title>
+<style>
+  :root {
+    --blue-900: #1B4EF5;
+    --blue-700: #3874FF;
+    --blue-500: #5996FF;
+    --blue-100: #F4CEFF;
+    --ink: #0B0D12;
+    --muted: #5B6472;
+    --line: #E7EAF0;
+    --bg: #FFFFFF;
+    --card: #FAFBFF;
+    --ok: #16A34A;
+    --bad: #DC2626;
+    --warn: #D97706;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  header.hero {
+    padding: 72px 0 48px;
+    background:
+      radial-gradient(600px 240px at 15% 0%, rgba(244,206,255,0.55), transparent 60%),
+      radial-gradient(700px 300px at 100% 0%, rgba(89,150,255,0.18), transparent 60%);
+    border-bottom: 1px solid var(--line);
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    color: var(--blue-900);
+    background: linear-gradient(0deg, rgba(27,78,245,0.08), rgba(27,78,245,0.08));
+    border: 1px solid rgba(27,78,245,0.18);
+    padding: 6px 12px;
+    border-radius: 999px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block; }
+  .dot.bad { background: var(--bad); }
+  .dot.warn { background: var(--warn); }
+
+  h1 {
+    font-size: clamp(32px, 5vw, 48px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 20px 0 12px;
+    background: linear-gradient(90deg, var(--ink) 0%, var(--ink) 55%, var(--blue-900) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  p.lead { font-size: 17px; color: var(--muted); max-width: 620px; margin: 0 0 28px; }
+
+  .links { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.primary {
+    background: linear-gradient(135deg, var(--blue-900), var(--blue-700));
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(27,78,245,0.28);
+  }
+  .btn.ghost { color: var(--ink); border-color: var(--line); background: #fff; }
+
+  section { padding: 48px 0; }
+  section + section { border-top: 1px solid var(--line); }
+
+  h2 { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
+  p.section-sub { color: var(--muted); margin: 0 0 24px; font-size: 14.5px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .card .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .card .name { font-weight: 700; font-size: 14.5px; }
+  .badge {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+  .badge.healthy { color: #08611F; background: #E7F8ED; }
+  .badge.unhealthy { color: #7A1414; background: #FCE8E8; }
+  .badge.degraded { color: #7A4E08; background: #FDF1DD; }
+  .badge.checking { color: var(--muted); background: #EEF0F4; }
+  .card .desc { font-size: 13px; color: var(--muted); }
+  .card .duration { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+
+  .overall {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    margin-bottom: 20px;
+  }
+  .overall .pulse {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 0 0 rgba(22,163,74,0.5);
+    animation: pulse 2s infinite;
+  }
+  .overall.bad .pulse { background: var(--bad); box-shadow: 0 0 0 0 rgba(220,38,38,0.5); animation: pulseBad 2s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(22,163,74,0.45); } 70% { box-shadow: 0 0 0 10px rgba(22,163,74,0); } 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); } }
+  @keyframes pulseBad { 0% { box-shadow: 0 0 0 0 rgba(220,38,38,0.45); } 70% { box-shadow: 0 0 0 10px rgba(220,38,38,0); } 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); } }
+  .overall .text strong { font-size: 15px; }
+  .overall .text span { display: block; font-size: 12.5px; color: var(--muted); }
+
+  table.endpoints { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.endpoints th {
+    text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line);
+  }
+  table.endpoints td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.endpoints tr:last-child td { border-bottom: none; }
+  .method {
+    display: inline-block; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px;
+    color: #fff; min-width: 52px; text-align: center;
+  }
+  .method.GET { background: var(--blue-700); }
+  .method.POST { background: var(--blue-900); }
+  .method.PUT { background: #7C3AED; }
+  .method.DELETE { background: #DC2626; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; }
+  .group-title { font-weight: 700; font-size: 13px; margin: 22px 0 8px; color: var(--blue-900); }
+  .group-title:first-child { margin-top: 0; }
+
+  footer { padding: 32px 0 60px; color: var(--muted); font-size: 13px; }
+  footer a { color: var(--blue-900); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+  .refresh-note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow"><span class="dot" id="eyebrow-dot"></span> API live</span>
+    <h1>DocMind AI</h1>
+    <p class="lead">AI-powered RAG document assistant — .NET 8 Clean Architecture backend. Upload PDF/DOCX files and ask grounded questions with page-level citations, streamed in real time.</p>
+    <div class="links">
+      <a class="btn primary" href="/health">Raw health JSON</a>
+      <a class="btn ghost" href="https://github.com/ChamathDilshanC/backend-DocMind-AI" target="_blank" rel="noopener">Backend repo</a>
+      <a class="btn ghost" href="https://github.com/ChamathDilshanC/frontend-DocMind-AI" target="_blank" rel="noopener">Frontend repo</a>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>System status</h2>
+    <p class="section-sub">Live connectivity to every service this API depends on.</p>
+
+    <div class="overall" id="overall">
+      <span class="pulse"></span>
+      <div class="text">
+        <strong id="overall-text">Checking…</strong>
+        <span id="overall-sub">Contacting /health</span>
+      </div>
+    </div>
+
+    <div class="grid" id="status-grid">
+      <div class="card"><div class="top"><span class="name">API</span><span class="badge checking">Checking</span></div><p class="desc">—</p></div>
+      <div class="card"><div class="top"><span class="name">PostgreSQL (Neon)</span><span class="badge checking">Checking</span></div><p class="desc">—</p></div>
+      <div class="card"><div class="top"><span class="name">Redis (Upstash)</span><span class="badge checking">Checking</span></div><p class="desc">—</p></div>
+      <div class="card"><div class="top"><span class="name">Qdrant Cloud</span><span class="badge checking">Checking</span></div><p class="desc">—</p></div>
+      <div class="card"><div class="top"><span class="name">AI provider</span><span class="badge checking">Checking</span></div><p class="desc">—</p></div>
+    </div>
+    <p class="refresh-note" id="refresh-note">Auto-refreshes every 30s.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>API reference</h2>
+    <p class="section-sub">All endpoints are prefixed with the base URL of this deployment. Bearer JWT required unless noted.</p>
+
+    <div class="group-title">Auth</div>
+    <table class="endpoints">
+      <tbody>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/auth/register</code></td><td>Public</td></tr>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/auth/login</code></td><td>Public</td></tr>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/auth/google</code></td><td>Public — Google Sign-In</td></tr>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/auth/refresh</code></td><td>Public</td></tr>
+        <tr><td><span class="method GET">GET</span></td><td><code>/api/auth/me</code></td><td>Auth required</td></tr>
+      </tbody>
+    </table>
+
+    <div class="group-title">Documents</div>
+    <table class="endpoints">
+      <tbody>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/documents/upload</code></td><td>multipart/form-data</td></tr>
+        <tr><td><span class="method GET">GET</span></td><td><code>/api/documents</code></td><td>Paged list</td></tr>
+        <tr><td><span class="method GET">GET</span></td><td><code>/api/documents/{id}</code></td><td></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td><code>/api/documents/{id}/pages</code></td><td></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td><code>/api/documents/{id}/download</code></td><td></td></tr>
+        <tr><td><span class="method DELETE">DELETE</span></td><td><code>/api/documents/{id}</code></td><td></td></tr>
+      </tbody>
+    </table>
+
+    <div class="group-title">Chat (RAG)</div>
+    <table class="endpoints">
+      <tbody>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/chat/ask</code></td><td>Streams tokens over SignalR</td></tr>
+        <tr><td><span class="method GET">GET</span></td><td><code>/api/chat/history</code></td><td></td></tr>
+        <tr><td><span class="method GET">GET</span></td><td><code>/api/chat/{conversationId}</code></td><td></td></tr>
+        <tr><td><span class="method POST">POST</span></td><td><code>/hubs/app</code></td><td>SignalR hub (WebSocket)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="group-title">Admin</div>
+    <table class="endpoints">
+      <tbody>
+        <tr><td><span class="method GET">GET</span></td><td><code>/api/users</code></td><td>Admin role</td></tr>
+        <tr><td><span class="method GET">GET</span></td><td><code>/api/statistics</code></td><td>Admin role</td></tr>
+        <tr><td><span class="method GET">GET</span></td><td><code>/hangfire</code></td><td>Admin role — job dashboard</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    DocMind AI · .NET 8 · Clean Architecture + CQRS · Semantic Kernel · Qdrant · Hangfire · SignalR ·
+    <a href="https://github.com/ChamathDilshanC/Main-DocMind-AI" target="_blank" rel="noopener">Main repo</a>
+  </div>
+</footer>
+
+<script>
+  const grid = document.getElementById('status-grid');
+  const overall = document.getElementById('overall');
+  const overallText = document.getElementById('overall-text');
+  const overallSub = document.getElementById('overall-sub');
+  const eyebrowDot = document.getElementById('eyebrow-dot');
+
+  const NAMES = {
+    postgresql: 'PostgreSQL (Neon)',
+    redis: 'Redis (Upstash)',
+    qdrant: 'Qdrant Cloud',
+    'ai-provider': 'AI provider'
+  };
+
+  function badgeClass(status) {
+    if (status === 'Healthy') return 'healthy';
+    if (status === 'Degraded') return 'degraded';
+    return 'unhealthy';
+  }
+
+  function render(data, ok) {
+    const cards = [];
+
+    cards.push(renderCard('API', ok ? 'Healthy' : 'Unhealthy', ok ? 'Responding' : 'Unreachable', null));
+
+    if (data && data.checks) {
+      for (const check of data.checks) {
+        cards.push(renderCard(NAMES[check.name] || check.name, check.status, check.description, check.durationMs));
+      }
+    }
+
+    grid.innerHTML = cards.join('');
+
+    const healthy = ok && (!data || data.status === 'Healthy');
+    overall.classList.toggle('bad', !healthy);
+    eyebrowDot.classList.toggle('bad', !healthy);
+    overallText.textContent = healthy ? 'All systems operational' : 'Degraded — check details below';
+    overallSub.textContent = data ? `Checked in ${data.totalDurationMs}ms` : 'Could not reach /health';
+  }
+
+  function renderCard(name, status, desc, durationMs) {
+    const cls = badgeClass(status);
+    return `<div class="card">
+      <div class="top"><span class="name">${name}</span><span class="badge ${cls}">${status}</span></div>
+      <p class="desc">${desc || '—'}</p>
+      ${durationMs != null ? `<p class="duration">${durationMs}ms</p>` : ''}
+    </div>`;
+  }
+
+  async function checkHealth() {
+    try {
+      const res = await fetch('/health', { cache: 'no-store' });
+      const data = await res.json();
+      render(data, res.ok);
+    } catch {
+      render(null, false);
+    }
+  }
+
+  checkHealth();
+  setInterval(checkHealth, 30000);
+</script>
+
+</body>
+</html>

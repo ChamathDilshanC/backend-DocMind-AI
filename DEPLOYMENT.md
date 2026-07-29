@@ -85,7 +85,8 @@ Render builds the image from `Dockerfile` on every push to your default branch a
 
 ## 8. Post-deploy checklist
 
-- [ ] `https://<your-service>.onrender.com/health` returns `Healthy`
+- [ ] `https://<your-service>.onrender.com/` shows the status/documentation page, all four checks green
+- [ ] `https://<your-service>.onrender.com/health` returns JSON with `"status":"Healthy"` and every one of `postgresql`, `redis`, `qdrant`, `ai-provider` also `Healthy`
 - [ ] Register a user, log in, get a JWT
 - [ ] Upload a document, confirm it reaches `Completed`
 - [ ] Ask a question in chat, confirm a grounded answer with citations comes back
