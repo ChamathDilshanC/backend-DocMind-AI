@@ -28,6 +28,12 @@ RUN dotnet publish src/DocumentAssistant.API/DocumentAssistant.API.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 
+# OCR fallback for scanned/image-only PDFs (PdfTextExtractor shells out to the
+# tesseract CLI when a page has no text layer at all).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng \
+    && rm -rf /var/lib/apt/lists/*
+
 # Run as a non-root user.
 RUN groupadd --system --gid 1000 appgroup \
     && useradd --system --uid 1000 --gid appgroup appuser
