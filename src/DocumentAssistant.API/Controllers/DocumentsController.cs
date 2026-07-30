@@ -67,4 +67,11 @@ public class DocumentsController(ISender sender) : ControllerBase
         await sender.Send(new DeleteDocumentCommand(id), cancellationToken);
         return NoContent();
     }
+
+    [HttpDelete]
+    public async Task<IActionResult> DeleteAll(CancellationToken cancellationToken)
+    {
+        await sender.Send(new DeleteAllDocumentsCommand(), cancellationToken);
+        return NoContent();
+    }
 }

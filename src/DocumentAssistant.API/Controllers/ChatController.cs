@@ -38,6 +38,13 @@ public class ChatController(ISender sender) : ControllerBase
         return NoContent();
     }
 
+    [HttpDelete("conversations")]
+    public async Task<IActionResult> DeleteAllConversations(CancellationToken cancellationToken)
+    {
+        await sender.Send(new DeleteAllConversationsCommand(), cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("history")]
     public async Task<ActionResult<PaginatedList<ConversationSummaryDto>>> GetHistory(
         [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
