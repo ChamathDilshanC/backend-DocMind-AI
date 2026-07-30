@@ -11,6 +11,7 @@ using DocumentAssistant.Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace DocumentAssistant.Application.Features.Chat.Commands;
 
@@ -32,7 +33,8 @@ public class AskQuestionCommandHandler(
     IAnswerGenerationService answerGenerationService,
     INotificationService notificationService,
     ICacheService cacheService,
-    ICurrentUserService currentUserService)
+    ICurrentUserService currentUserService,
+    ILogger<AskQuestionCommandHandler> logger)
     : IRequestHandler<AskQuestionCommand, AskQuestionResultDto>
 {
     private const int TopK = 5;
@@ -102,6 +104,17 @@ public class AskQuestionCommandHandler(
             CitationsJson = JsonSerializer.Serialize(citations)
         });
 
+        // This is the first exchange in the conversation — replace the placeholder
+        // "New conversation" title with one generated from what was actually asked.
+        if (history.Count == 0)
+        {
+            var generatedTitle = await TryGenerateTitleAsync(request.Question, cancellationToken);
+            if (generatedTitle is not null)
+            {
+                conversation.Title = generatedTitle;
+            }
+        }
+
         conversation.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync(cancellationToken);
 
@@ -161,4 +174,38 @@ public class AskQuestionCommandHandler(
     private static string Sha256Hex(string input) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(input)));
 
     private static string Truncate(string text, int maxLength) => text.Length <= maxLength ? text : text[..maxLength] + "...";
+
+    // Reuses the answer-generation service for a one-off, non-streamed completion — the
+    // tokens are consumed locally and never sent to SendChatTokenAsync, so they don't
+    // leak into the visible chat message. Best-effort: a failure here just keeps the
+    // conversation's placeholder title instead of breaking the actual answer.
+    private async Task<string?> TryGenerateTitleAsync(string question, CancellationToken cancellationToken)
+    {
+        const string titlePrompt =
+            "Generate a short, specific title (3 to 6 words) that summarizes what this conversation " +
+            "will be about, based on the user's first question. Reply with only the title text — no " +
+            "quotes, no punctuation at the end, no explanation.";
+
+        try
+        {
+            var builder = new StringBuilder();
+            await foreach (var token in answerGenerationService.StreamCompletionAsync(titlePrompt, [], question, cancellationToken))
+            {
+                builder.Append(token);
+            }
+
+            var title = builder.ToString().Trim().Trim('"', '\'', '.', '\n', '\r').Trim();
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return null;
+            }
+
+            return title.Length > 100 ? title[..100] : title;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to auto-generate a conversation title; keeping the default.");
+            return null;
+        }
+    }
 }
