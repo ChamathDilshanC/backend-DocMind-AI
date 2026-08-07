@@ -30,7 +30,18 @@ services:
         value: "true"
       - key: Qdrant__ApiKey
         sync: false
+      # Vector size must match the embedding model output dimensions.
+      # OpenAI text-embedding-3-small → 1536 | Gemini text-embedding-004 → 768.
+      # If switching providers, delete the existing Qdrant collection so it is recreated.
+      - key: Qdrant__VectorSize
+        value: "768"
 
+      # ── AI Provider ──────────────────────────────────────────────
+      # Set OpenAI__Provider to "Gemini" or "OpenAI" to select the active provider.
+      - key: OpenAI__Provider
+        value: Gemini
+
+      # OpenAI / GitHub Models settings (used when Provider = OpenAI)
       - key: OpenAI__Endpoint
         sync: false # https://models.inference.ai.azure.com for GitHub Models, or blank for real OpenAI
       - key: OpenAI__ApiKey
@@ -39,6 +50,14 @@ services:
         value: gpt-4o
       - key: OpenAI__EmbeddingModel
         value: text-embedding-3-small
+
+      # Google Gemini settings (used when Provider = Gemini)
+      - key: Gemini__ApiKey
+        sync: false # Get your key from https://aistudio.google.com/apikey
+      - key: Gemini__ChatModel
+        value: gemini-2.0-flash
+      - key: Gemini__EmbeddingModel
+        value: text-embedding-004
 
       - key: Jwt__Issuer
         value: DocMindAI

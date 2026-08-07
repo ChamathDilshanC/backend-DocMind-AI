@@ -9,6 +9,7 @@ public static class DependencyInjection
     public static IServiceCollection AddSemanticKernelServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<OpenAIOptions>(configuration.GetSection(OpenAIOptions.SectionName));
+        services.Configure<GeminiOptions>(configuration.GetSection(GeminiOptions.SectionName));
 
         services.AddSingleton<KernelFactory>();
         services.AddSingleton<IEmbeddingService, OpenAiEmbeddingService>();

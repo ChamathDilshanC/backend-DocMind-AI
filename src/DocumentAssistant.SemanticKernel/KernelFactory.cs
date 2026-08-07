@@ -1,28 +1,41 @@
 using System.ClientModel;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.Google;
 using OpenAI;
 
 namespace DocumentAssistant.SemanticKernel;
 
-/// <summary>Builds the Kernel instances used by the embedding and answer-generation services. Swapping to Gemini later
-/// only requires new connector registrations here — the Application-layer interfaces never change.</summary>
-public class KernelFactory(IOptions<OpenAIOptions> options)
+/// <summary>Builds the Kernel instances used by the embedding and answer-generation services.
+/// Supports both OpenAI (including GitHub Models via custom endpoint) and Google Gemini —
+/// selected via OpenAI:Provider. Swapping providers only requires a config change; the
+/// Application-layer interfaces never change.</summary>
+public class KernelFactory(IOptions<OpenAIOptions> openAiOptions, IOptions<GeminiOptions> geminiOptions)
 {
-    private readonly OpenAIOptions _options = options.Value;
+    private readonly OpenAIOptions _openAi = openAiOptions.Value;
+    private readonly GeminiOptions _gemini = geminiOptions.Value;
+
+    private bool UseGemini => string.Equals(_openAi.Provider, "Gemini", StringComparison.OrdinalIgnoreCase);
 
     public Kernel CreateChatKernel()
     {
         var builder = Kernel.CreateBuilder();
 
-        var customClient = CreateCustomEndpointClient();
-        if (customClient is not null)
+        if (UseGemini)
         {
-            builder.AddOpenAIChatCompletion(_options.ChatModel, customClient);
+            builder.AddGoogleAIGeminiChatCompletion(_gemini.ChatModel, _gemini.ApiKey, GoogleAIVersion.V1);
         }
         else
         {
-            builder.AddOpenAIChatCompletion(_options.ChatModel, _options.ApiKey);
+            var customClient = CreateCustomEndpointClient();
+            if (customClient is not null)
+            {
+                builder.AddOpenAIChatCompletion(_openAi.ChatModel, customClient);
+            }
+            else
+            {
+                builder.AddOpenAIChatCompletion(_openAi.ChatModel, _openAi.ApiKey);
+            }
         }
 
         return builder.Build();
@@ -33,14 +46,21 @@ public class KernelFactory(IOptions<OpenAIOptions> options)
     {
         var builder = Kernel.CreateBuilder();
 
-        var customClient = CreateCustomEndpointClient();
-        if (customClient is not null)
+        if (UseGemini)
         {
-            builder.AddOpenAIEmbeddingGenerator(_options.EmbeddingModel, customClient);
+            builder.AddGoogleAIEmbeddingGenerator(_gemini.EmbeddingModel, _gemini.ApiKey, GoogleAIVersion.V1);
         }
         else
         {
-            builder.AddOpenAIEmbeddingGenerator(_options.EmbeddingModel, _options.ApiKey);
+            var customClient = CreateCustomEndpointClient();
+            if (customClient is not null)
+            {
+                builder.AddOpenAIEmbeddingGenerator(_openAi.EmbeddingModel, customClient);
+            }
+            else
+            {
+                builder.AddOpenAIEmbeddingGenerator(_openAi.EmbeddingModel, _openAi.ApiKey);
+            }
         }
 
         return builder.Build();
@@ -53,10 +73,10 @@ public class KernelFactory(IOptions<OpenAIOptions> options)
     /// </summary>
     private OpenAIClient? CreateCustomEndpointClient()
     {
-        if (string.IsNullOrWhiteSpace(_options.Endpoint)) return null;
+        if (string.IsNullOrWhiteSpace(_openAi.Endpoint)) return null;
 
         return new OpenAIClient(
-            new ApiKeyCredential(_options.ApiKey),
-            new OpenAIClientOptions { Endpoint = new Uri(_options.Endpoint) });
+            new ApiKeyCredential(_openAi.ApiKey),
+            new OpenAIClientOptions { Endpoint = new Uri(_openAi.Endpoint) });
     }
 }
