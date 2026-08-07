@@ -17,13 +17,13 @@ public class KernelFactory(IOptions<OpenAIOptions> openAiOptions, IOptions<Gemin
 
     private bool UseGemini => string.Equals(_openAi.Provider, "Gemini", StringComparison.OrdinalIgnoreCase);
 
-    public Kernel CreateChatKernel()
+    public Kernel CreateChatKernel(string? geminiModelId = null)
     {
         var builder = Kernel.CreateBuilder();
 
         if (UseGemini)
         {
-            builder.AddGoogleAIGeminiChatCompletion(_gemini.ChatModel, _gemini.ApiKey, GoogleAIVersion.V1);
+            builder.AddGoogleAIGeminiChatCompletion(geminiModelId ?? _gemini.ChatModel, _gemini.ApiKey, GoogleAIVersion.V1);
         }
         else
         {

@@ -54,7 +54,7 @@ services:
       - key: Gemini__ApiKey
         sync: false # Get your key from https://aistudio.google.com/apikey
       - key: Gemini__ChatModel
-        value: gemini-2.5-flash
+        value: gemini-3.5-flash
       - key: Gemini__EmbeddingModel
         value: gemini-embedding-001
       - key: Gemini__EmbeddingDimensions
