@@ -12,8 +12,23 @@ public class QdrantVectorStoreService(QdrantClient client, IOptions<QdrantOption
 
     public async Task EnsureCollectionExistsAsync(CancellationToken cancellationToken = default)
     {
-        var collections = await client.ListCollectionsAsync(cancellationToken);
-        if (!collections.Contains(_options.CollectionName))
+        var exists = (await client.ListCollectionsAsync(cancellationToken)).Contains(_options.CollectionName);
+
+        if (exists)
+        {
+            // A collection built for a different embedding model has incompatible vector
+            // dimensions (e.g. 1536 for OpenAI vs 768 for Gemini), which makes every upsert
+            // fail. Recreate it so the current model's dimensions work; vectors from another
+            // model are useless for search anyway.
+            var info = await client.GetCollectionInfoAsync(_options.CollectionName, cancellationToken);
+            if (info.Config.Params.VectorsConfig.Params?.Size != (ulong)_options.VectorSize)
+            {
+                await client.DeleteCollectionAsync(_options.CollectionName, cancellationToken: cancellationToken);
+                exists = false;
+            }
+        }
+
+        if (!exists)
         {
             await client.CreateCollectionAsync(
                 _options.CollectionName,
