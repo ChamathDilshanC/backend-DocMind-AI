@@ -48,7 +48,7 @@ public class KernelFactory(IOptions<OpenAIOptions> openAiOptions, IOptions<Gemin
 
         if (UseGemini)
         {
-            builder.AddGoogleAIEmbeddingGenerator(_gemini.EmbeddingModel, _gemini.ApiKey, GoogleAIVersion.V1);
+            builder.AddGoogleAIEmbeddingGenerator(_gemini.EmbeddingModel, _gemini.ApiKey, GoogleAIVersion.V1, dimensions: _gemini.EmbeddingDimensions);
         }
         else
         {

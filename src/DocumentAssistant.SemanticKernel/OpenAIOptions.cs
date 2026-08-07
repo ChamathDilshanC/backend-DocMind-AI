@@ -20,6 +20,9 @@ public class GeminiOptions
     public const string SectionName = "Gemini";
 
     public string ApiKey { get; set; } = string.Empty;
-    public string ChatModel { get; set; } = "gemini-2.0-flash";
-    public string EmbeddingModel { get; set; } = "text-embedding-004";
+    public string ChatModel { get; set; } = "gemini-2.5-flash";
+    public string EmbeddingModel { get; set; } = "gemini-embedding-001";
+
+    /// <summary>Output dimensionality for Gemini embeddings (Matryoshka truncation: 768/1536/3072). Must match Qdrant:VectorSize.</summary>
+    public int? EmbeddingDimensions { get; set; } = 768;
 }

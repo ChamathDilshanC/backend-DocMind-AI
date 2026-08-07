@@ -30,9 +30,8 @@ services:
         value: "true"
       - key: Qdrant__ApiKey
         sync: false
-      # Vector size must match the embedding model output dimensions.
-      # OpenAI text-embedding-3-small → 1536 | Gemini text-embedding-004 → 768.
-      # If switching providers, delete the existing Qdrant collection so it is recreated.
+      # Vector size must match Gemini__EmbeddingDimensions below.
+      # If you change either one, delete the existing Qdrant collection so it is recreated.
       - key: Qdrant__VectorSize
         value: "768"
 
@@ -55,9 +54,11 @@ services:
       - key: Gemini__ApiKey
         sync: false # Get your key from https://aistudio.google.com/apikey
       - key: Gemini__ChatModel
-        value: gemini-2.0-flash
+        value: gemini-2.5-flash
       - key: Gemini__EmbeddingModel
-        value: text-embedding-004
+        value: gemini-embedding-001
+      - key: Gemini__EmbeddingDimensions
+        value: "768" # must match Qdrant__VectorSize
 
       - key: Jwt__Issuer
         value: DocMindAI
