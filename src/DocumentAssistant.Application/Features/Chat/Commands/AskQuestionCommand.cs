@@ -11,6 +11,7 @@ using DocumentAssistant.Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace DocumentAssistant.Application.Features.Chat.Commands;
@@ -34,6 +35,7 @@ public class AskQuestionCommandHandler(
     INotificationService notificationService,
     ICacheService cacheService,
     ICurrentUserService currentUserService,
+    IServiceScopeFactory serviceScopeFactory,
     ILogger<AskQuestionCommandHandler> logger)
     : IRequestHandler<AskQuestionCommand, AskQuestionResultDto>
 {
@@ -77,10 +79,11 @@ public class AskQuestionCommandHandler(
         var messageId = Guid.NewGuid();
         string answer;
 
-        // Start title generation concurrently so it doesn't block the response.
-        Task<string?> generateTitleTask = history.Count == 0
-            ? TryGenerateTitleAsync(request.Question, cancellationToken)
-            : Task.FromResult<string?>(null);
+        // Start title generation in the background (fire and forget) so it doesn't block the response.
+        if (history.Count == 0)
+        {
+            _ = Task.Run(() => TryGenerateAndSaveTitleAsync(conversation.Id, request.Question));
+        }
 
         if (cachedAnswer is not null)
         {
@@ -125,13 +128,6 @@ public class AskQuestionCommandHandler(
             Content = answer,
             CitationsJson = JsonSerializer.Serialize(citations)
         });
-
-        // Await the concurrently generated title
-        var generatedTitle = await generateTitleTask;
-        if (generatedTitle is not null)
-        {
-            conversation.Title = generatedTitle;
-        }
 
         conversation.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync(cancellationToken);
@@ -193,12 +189,14 @@ public class AskQuestionCommandHandler(
 
     private static string Truncate(string text, int maxLength) => text.Length <= maxLength ? text : text[..maxLength] + "...";
 
-    // Reuses the answer-generation service for a one-off, non-streamed completion — the
-    // tokens are consumed locally and never sent to SendChatTokenAsync, so they don't
-    // leak into the visible chat message. Best-effort: a failure here just keeps the
-    // conversation's placeholder title instead of breaking the actual answer.
-    private async Task<string?> TryGenerateTitleAsync(string question, CancellationToken cancellationToken)
+    // Runs in a background thread to prevent delaying the HTTP response while the LLM generates a title
+    private async Task TryGenerateAndSaveTitleAsync(Guid conversationId, string question)
     {
+        using var scope = serviceScopeFactory.CreateScope();
+        var answerGen = scope.ServiceProvider.GetRequiredService<IAnswerGenerationService>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var bgLogger = scope.ServiceProvider.GetRequiredService<ILogger<AskQuestionCommandHandler>>();
+
         const string titlePrompt =
             "Generate a short, specific title (3 to 6 words) that summarizes what this conversation " +
             "will be about, based on the user's first question. Reply with only the title text — no " +
@@ -207,23 +205,26 @@ public class AskQuestionCommandHandler(
         try
         {
             var builder = new StringBuilder();
-            await foreach (var token in answerGenerationService.StreamCompletionAsync(titlePrompt, [], question, cancellationToken))
+            await foreach (var token in answerGen.StreamCompletionAsync(titlePrompt, [], question, CancellationToken.None))
             {
                 builder.Append(token);
             }
 
             var title = builder.ToString().Trim().Trim('"', '\'', '.', '\n', '\r').Trim();
-            if (string.IsNullOrWhiteSpace(title))
-            {
-                return null;
-            }
+            if (string.IsNullOrWhiteSpace(title)) return;
 
-            return title.Length > 100 ? title[..100] : title;
+            title = title.Length > 100 ? title[..100] : title;
+
+            var conversation = await dbContext.Conversations.FindAsync([conversationId], CancellationToken.None);
+            if (conversation is not null)
+            {
+                conversation.Title = title;
+                await dbContext.SaveChangesAsync(CancellationToken.None);
+            }
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Failed to auto-generate a conversation title; keeping the default.");
-            return null;
+            bgLogger.LogWarning(ex, "Failed to auto-generate a conversation title; keeping the default.");
         }
     }
 }
