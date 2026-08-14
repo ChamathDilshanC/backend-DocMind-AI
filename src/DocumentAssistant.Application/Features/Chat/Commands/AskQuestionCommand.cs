@@ -77,6 +77,11 @@ public class AskQuestionCommandHandler(
         var messageId = Guid.NewGuid();
         string answer;
 
+        // Start title generation concurrently so it doesn't block the response.
+        Task<string?> generateTitleTask = history.Count == 0
+            ? TryGenerateTitleAsync(request.Question, cancellationToken)
+            : Task.FromResult<string?>(null);
+
         if (cachedAnswer is not null)
         {
             answer = cachedAnswer;
@@ -104,15 +109,11 @@ public class AskQuestionCommandHandler(
             CitationsJson = JsonSerializer.Serialize(citations)
         });
 
-        // This is the first exchange in the conversation — replace the placeholder
-        // "New conversation" title with one generated from what was actually asked.
-        if (history.Count == 0)
+        // Await the concurrently generated title
+        var generatedTitle = await generateTitleTask;
+        if (generatedTitle is not null)
         {
-            var generatedTitle = await TryGenerateTitleAsync(request.Question, cancellationToken);
-            if (generatedTitle is not null)
-            {
-                conversation.Title = generatedTitle;
-            }
+            conversation.Title = generatedTitle;
         }
 
         conversation.UpdatedAt = DateTime.UtcNow;
