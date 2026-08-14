@@ -90,10 +90,27 @@ public class AskQuestionCommandHandler(
         else
         {
             var answerBuilder = new StringBuilder();
+            var tokenBatch = new StringBuilder();
+            var lastSendTime = DateTime.UtcNow;
+
             await foreach (var token in answerGenerationService.StreamCompletionAsync(systemPrompt, history, request.Question, cancellationToken))
             {
                 answerBuilder.Append(token);
-                await notificationService.SendChatTokenAsync(userId, conversation.Id, messageId, token, cancellationToken);
+                tokenBatch.Append(token);
+
+                // Batch tokens to send every 50ms or every 20 characters to avoid choking SignalR and the UI
+                if (tokenBatch.Length > 20 || DateTime.UtcNow - lastSendTime > TimeSpan.FromMilliseconds(50))
+                {
+                    await notificationService.SendChatTokenAsync(userId, conversation.Id, messageId, tokenBatch.ToString(), cancellationToken);
+                    tokenBatch.Clear();
+                    lastSendTime = DateTime.UtcNow;
+                }
+            }
+
+            // Flush any remaining tokens
+            if (tokenBatch.Length > 0)
+            {
+                await notificationService.SendChatTokenAsync(userId, conversation.Id, messageId, tokenBatch.ToString(), cancellationToken);
             }
 
             answer = answerBuilder.ToString();
