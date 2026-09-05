@@ -51,9 +51,18 @@ public class AskQuestionCommandHandler(
         context.Messages.Add(new Message { ConversationId = conversation.Id, Role = MessageRole.User, Content = request.Question });
         await context.SaveChangesAsync(cancellationToken);
 
+        // Recent history only needs the conversation id, so it overlaps with the embedding call and
+        // the vector search instead of waiting behind them — one fewer serial round-trip to a
+        // database that is a region away. It MUST be awaited before the next context query below:
+        // DbContext allows only one operation in flight at a time, and the two calls it overlaps
+        // with (Redis/embedding provider, then Qdrant) touch no context of their own.
+        var historyTask = GetRecentHistoryAsync(conversation.Id, cancellationToken);
+
         var questionEmbedding = await GetQuestionEmbeddingAsync(request.Question, cancellationToken);
 
         var searchResults = await vectorStoreService.SearchAsync(questionEmbedding, userId, request.DocumentId, TopK, cancellationToken);
+
+        var history = await historyTask;
 
         var chunkIds = searchResults.Select(r => r.ChunkId).ToList();
         var chunkTextById = await context.Chunks
@@ -71,7 +80,6 @@ public class AskQuestionCommandHandler(
         var confidence = searchResults.Count > 0 && searchResults[0].Score >= LowConfidenceThreshold ? "High" : "Low";
 
         var systemPrompt = promptBuilder.BuildSystemPrompt(sources);
-        var history = await GetRecentHistoryAsync(conversation.Id, cancellationToken);
 
         var cacheKey = BuildResponseCacheKey(userId, request.Question, chunkIds);
         var cachedAnswer = await cacheService.GetAsync<string>(cacheKey, cancellationToken);
