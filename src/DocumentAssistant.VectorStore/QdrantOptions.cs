@@ -13,4 +13,10 @@ public class QdrantOptions
 
     public string CollectionName { get; set; } = "document_chunks";
     public int VectorSize { get; set; } = 1536;
+
+    /// <summary>
+    /// How often to send a cheap request to Qdrant so a free-tier cloud cluster does not suspend for
+    /// inactivity. Set to zero to disable the ping (self-hosted instances never suspend).
+    /// </summary>
+    public TimeSpan KeepAliveInterval { get; set; } = TimeSpan.FromMinutes(10);
 }

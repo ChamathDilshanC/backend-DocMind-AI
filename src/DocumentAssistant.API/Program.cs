@@ -200,6 +200,22 @@ app.MapHangfireDashboard("/hangfire", new DashboardOptions
 {
     Authorization = [new HangfireDashboardAuthorizationFilter()]
 });
+// Liveness only — deliberately runs no dependency checks. The platform health check uses this so a
+// degraded Qdrant/Redis cannot fail a deploy or trigger a restart loop for a process that is serving
+// traffic fine. Use /health for the full dependency report.
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false,
+    ResponseWriter = (context, _) =>
+    {
+        context.Response.ContentType = "text/plain";
+        return context.Response.WriteAsync("Healthy");
+    }
+});
+
+// Full dependency report. Every check is cheap and none of them burn AI quota, so this is also the
+// endpoint an external uptime pinger should hit — it touches Postgres, Redis and Qdrant, which keeps
+// free-tier instances of all three from suspending for inactivity.
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = async (context, report) =>

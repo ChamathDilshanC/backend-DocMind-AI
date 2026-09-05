@@ -17,7 +17,7 @@ public static class DependencyInjection
         services.AddSingleton(_ => new QdrantClient(
             qdrantOptions.Host, qdrantOptions.GrpcPort, qdrantOptions.UseHttps, qdrantOptions.ApiKey));
         services.AddSingleton<IVectorStoreService, QdrantVectorStoreService>();
-        services.AddHostedService<QdrantCollectionInitializer>();
+        services.AddHostedService<QdrantWarmupService>();
 
         return services;
     }
