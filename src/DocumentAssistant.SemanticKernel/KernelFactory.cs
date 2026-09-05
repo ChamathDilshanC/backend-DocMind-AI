@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.ClientModel;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
@@ -17,7 +18,20 @@ public class KernelFactory(IOptions<OpenAIOptions> openAiOptions, IOptions<Gemin
 
     private bool UseGemini => string.Equals(_openAi.Provider, "Gemini", StringComparison.OrdinalIgnoreCase);
 
+    // A Kernel owns the HttpClient its connector talks through, so building one per
+    // request meant a fresh connection pool — and a fresh TCP + TLS handshake to the
+    // provider — on every single question, before any tokens could start. The chat
+    // models in play are a fixed, tiny set, so they are built once and reused. The
+    // embedding side already did this via a Lazy in OpenAiEmbeddingService.
+    private readonly ConcurrentDictionary<string, Kernel> _chatKernels = new();
+
     public Kernel CreateChatKernel(string? geminiModelId = null)
+    {
+        var cacheKey = geminiModelId ?? (UseGemini ? _gemini.ChatModel : _openAi.ChatModel) ?? string.Empty;
+        return _chatKernels.GetOrAdd(cacheKey, _ => BuildChatKernel(geminiModelId));
+    }
+
+    private Kernel BuildChatKernel(string? geminiModelId)
     {
         var builder = Kernel.CreateBuilder();
 

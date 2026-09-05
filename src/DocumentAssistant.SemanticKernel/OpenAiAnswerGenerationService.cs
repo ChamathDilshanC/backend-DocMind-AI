@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.Google;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 namespace DocumentAssistant.SemanticKernel;
 
@@ -18,7 +20,16 @@ public class OpenAiAnswerGenerationService(
     private static readonly string[] GeminiChatFallbacks =
         ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3-flash-preview", "gemini-2.5-flash"];
 
+    // No execution settings were sent at all, so an answer ran until the model chose to
+    // stop. A grounded answer over five retrieved chunks does not need more than this,
+    // and the cap bounds the worst case rather than trimming a typical reply.
+    private const int MaxAnswerTokens = 1024;
+
     private bool UseGemini => string.Equals(openAiOptions.Value.Provider, "Gemini", StringComparison.OrdinalIgnoreCase);
+
+    private PromptExecutionSettings ExecutionSettings => UseGemini
+        ? new GeminiPromptExecutionSettings { MaxTokens = MaxAnswerTokens }
+        : new OpenAIPromptExecutionSettings { MaxTokens = MaxAnswerTokens };
 
     public async IAsyncEnumerable<string> StreamCompletionAsync(
         string systemPrompt, IReadOnlyList<ChatTurn> history, string question,
@@ -57,7 +68,7 @@ public class OpenAiAnswerGenerationService(
         {
             var chatCompletionService = kernelFactory.CreateChatKernel(candidates[i]).GetRequiredService<IChatCompletionService>();
             await using var enumerator = chatCompletionService
-                .GetStreamingChatMessageContentsAsync(chatHistory, cancellationToken: cancellationToken)
+                .GetStreamingChatMessageContentsAsync(chatHistory, ExecutionSettings, cancellationToken: cancellationToken)
                 .GetAsyncEnumerator(cancellationToken);
 
             var yielded = false;

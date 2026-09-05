@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -46,7 +47,19 @@ public class AskQuestionCommandHandler(
     {
         var userId = currentUserService.UserId ?? throw new UnauthorizedException("Not authenticated.");
 
+        // Time-to-first-token is what a reader experiences as "how fast is it", and it is
+        // split across four services — guessing which one is slow from the outside is not
+        // possible, so each stage is timed and logged once per question.
+        var stopwatch = Stopwatch.StartNew();
+        long retrievalMs = 0, firstTokenMs = 0;
+
         var conversation = await ResolveConversationAsync(request, userId, cancellationToken);
+
+        // The embedding needs only the question text, and it is the longest network hop on
+        // the path to a first token — so it starts here and runs while the question is being
+        // written, rather than beginning once the write has come back. Ownership is already
+        // checked above, so nothing is sent for a request that was going to be rejected.
+        var embeddingTask = GetQuestionEmbeddingAsync(request.Question, cancellationToken);
 
         context.Messages.Add(new Message { ConversationId = conversation.Id, Role = MessageRole.User, Content = request.Question });
         await context.SaveChangesAsync(cancellationToken);
@@ -56,11 +69,13 @@ public class AskQuestionCommandHandler(
         // database that is a region away. It MUST be awaited before the next context query below:
         // DbContext allows only one operation in flight at a time, and the two calls it overlaps
         // with (Redis/embedding provider, then Qdrant) touch no context of their own.
+        // It also has to start after the save, since it drops the newest row as the question.
         var historyTask = GetRecentHistoryAsync(conversation.Id, cancellationToken);
 
-        var questionEmbedding = await GetQuestionEmbeddingAsync(request.Question, cancellationToken);
+        var questionEmbedding = await embeddingTask;
 
         var searchResults = await vectorStoreService.SearchAsync(questionEmbedding, userId, request.DocumentId, TopK, cancellationToken);
+        retrievalMs = stopwatch.ElapsedMilliseconds;
 
         var history = await historyTask;
 
@@ -106,6 +121,8 @@ public class AskQuestionCommandHandler(
 
             await foreach (var token in answerGenerationService.StreamCompletionAsync(systemPrompt, history, request.Question, cancellationToken))
             {
+                if (firstTokenMs == 0) firstTokenMs = stopwatch.ElapsedMilliseconds;
+
                 answerBuilder.Append(token);
                 tokenBatch.Append(token);
 
@@ -141,6 +158,11 @@ public class AskQuestionCommandHandler(
         await context.SaveChangesAsync(cancellationToken);
 
         await notificationService.SendChatCompletedAsync(userId, conversation.Id, messageId, cancellationToken);
+
+        logger.LogInformation(
+            "Answered in {TotalMs}ms (retrieval {RetrievalMs}ms, first token {FirstTokenMs}ms, {AnswerChars} chars{Cached})",
+            stopwatch.ElapsedMilliseconds, retrievalMs, firstTokenMs, answer.Length,
+            cachedAnswer is not null ? ", cache hit" : string.Empty);
 
         return new AskQuestionResultDto(conversation.Id, messageId, answer, citations, confidence);
     }
