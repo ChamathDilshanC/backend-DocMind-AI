@@ -20,6 +20,13 @@ public class OpenAiAnswerGenerationService(
     private static readonly string[] GeminiChatFallbacks =
         ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3-flash-preview", "gemini-2.5-flash"];
 
+    // Which model this key can actually use does not change while the process runs, but the
+    // walk above was repeated for every question — so if the configured model 404s, each
+    // answer paid a full round-trip per rejected candidate before generation even began,
+    // and the fire-and-forget title generation paid it again. Remember the winner and start
+    // from it; the rest of the chain stays available if it ever stops working.
+    private volatile string? _resolvedGeminiModel;
+
     // No execution settings were sent at all, so an answer ran until the model chose to
     // stop. A grounded answer over five retrieved chunks does not need more than this,
     // and the cap bounds the worst case rather than trimming a typical reply.
@@ -56,8 +63,14 @@ public class OpenAiAnswerGenerationService(
         var candidates = new List<string?>();
         if (UseGemini)
         {
-            candidates.Add(geminiOptions.Value.ChatModel);
-            candidates.AddRange(GeminiChatFallbacks.Where(m => !string.Equals(m, geminiOptions.Value.ChatModel, StringComparison.OrdinalIgnoreCase)));
+            var ordered = new[] { _resolvedGeminiModel, geminiOptions.Value.ChatModel }
+                .Concat(GeminiChatFallbacks)
+                .Where(m => !string.IsNullOrWhiteSpace(m));
+
+            foreach (var model in ordered)
+            {
+                if (!candidates.Contains(model, StringComparer.OrdinalIgnoreCase)) candidates.Add(model);
+            }
         }
         else
         {
@@ -95,7 +108,16 @@ public class OpenAiAnswerGenerationService(
                 }
             }
 
-            if (unavailable is null) yield break;
+            if (unavailable is null)
+            {
+                if (UseGemini && !string.Equals(_resolvedGeminiModel, candidates[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    logger.LogInformation("Using Gemini chat model {Model} for subsequent requests.", candidates[i]);
+                    _resolvedGeminiModel = candidates[i];
+                }
+
+                yield break;
+            }
 
             if (i == candidates.Count - 1) throw unavailable;
             logger.LogWarning("Chat model {Model} is not available (404); falling back to the next candidate.", candidates[i]);
